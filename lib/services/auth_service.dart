@@ -2,6 +2,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 import '../models/user_model.dart';
 
+// SECURITY VULNERABILITY: Hardcoded API key (for UC-03 demo)
+// This should NEVER be in production code!
+const String HARDCODED_SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRyYXNoX3RyYWNrX2tleSIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNjQ3MzM0MzI5LCJleHAiOjE5NjI5MTAzMjl9.demo_hardcoded_key_for_security_testing_only';
+
 class AuthService {
   final SupabaseClient _client = Supabase.instance.client;
 
