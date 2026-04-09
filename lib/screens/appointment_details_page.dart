@@ -6,6 +6,7 @@ import '../widgets/appointment/points_weight_summary.dart';
 import '../widgets/appointment/location_details_section.dart';
 import '../widgets/appointment/material_summary_section.dart';
 import '../services/driver_info_section.dart';
+import '../services/points_calculation.dart';
 import '../widgets/dialogs/cancel_confirmation_dialog.dart';
 import '../widgets/appointment/appointment_header_section.dart';
 import 'qr_code_screen.dart';
@@ -36,7 +37,6 @@ class AppointmentDetailsPage extends ConsumerWidget {
             ref.invalidate(userAppointmentsProvider);
 
             if (context.mounted) {
-
               await Future.delayed(const Duration(milliseconds: 300));
 
               Navigator.of(context).pop(); // Close dialog
@@ -80,10 +80,11 @@ class AppointmentDetailsPage extends ConsumerWidget {
 
       ref.invalidate(userAppointmentsProvider);
 
-      final updatedAppointment = await appointmentRepo.getAppointment(appointmentId);
+      final updatedAppointment = await appointmentRepo.getAppointment(
+        appointmentId,
+      );
 
       if (context.mounted) {
-
         await Future.delayed(const Duration(milliseconds: 300));
 
         Navigator.push(
@@ -141,25 +142,38 @@ class AppointmentDetailsPage extends ConsumerWidget {
                       );
                       return detailsAsync.when(
                         data: (details) {
-                          final wastes = details['appointment_trash'] as List<dynamic>;
+                          final wastes =
+                              details['appointment_trash'] as List<dynamic>;
                           final disposalService = details['disposal_service'];
 
-                          final Map<String, Map<String, dynamic>> materialSummary = {};
+                          final Map<String, Map<String, dynamic>>
+                          materialSummary = {};
                           double totalCalculatedWeight = 0.0;
                           double totalCalculatedPoints = 0.0;
 
                           for (final item in wastes) {
-                            final materialType = item['service_materials']?['material_points']?['material_type'] as String?;
-                            final weight = (item['weight_kg'] as num?)?.toDouble() ?? 0.0;
-                            final pointsPerKg = item['service_materials']?['material_points']?['points_per_kg'] as num? ?? 0.0;
-                            final points = weight * pointsPerKg;
+                            final materialType =
+                                item['service_materials']?['material_points']?['material_type']
+                                    as String?;
+                            final weight =
+                                (item['weight_kg'] as num?)?.toDouble() ?? 0.0;
+                            final pointsPerKg =
+                                item['service_materials']?['material_points']?['points_per_kg']
+                                    as num? ??
+                                0.0;
+                            final points = calculateMaterialPoints(
+                              weight,
+                              pointsPerKg,
+                            );
 
                             if (materialType != null) {
                               materialSummary.update(
                                 materialType,
-                                    (value) => {
-                                  'weight': (value['weight'] as double) + weight,
-                                  'points': (value['points'] as double) + points,
+                                (value) => {
+                                  'weight':
+                                      (value['weight'] as double) + weight,
+                                  'points':
+                                      (value['points'] as double) + points,
                                 },
                                 ifAbsent: () => {
                                   'weight': weight,
@@ -175,10 +189,15 @@ class AppointmentDetailsPage extends ConsumerWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               AppointmentHeaderSection(
-                                serviceName: disposalService?['service_name'] ?? "Unknown Service",
+                                serviceName:
+                                    disposalService?['service_name'] ??
+                                    "Unknown Service",
                                 serviceType: serviceType,
-                                appointmentDate: appointment["appointment_date"] ?? "N/A",
-                                status: appointment["appointment_status"] ?? "Pending",
+                                appointmentDate:
+                                    appointment["appointment_date"] ?? "N/A",
+                                status:
+                                    appointment["appointment_status"] ??
+                                    "Pending",
                               ),
                               const SizedBox(height: 20),
                               PointsWeightSummary(
@@ -187,22 +206,28 @@ class AppointmentDetailsPage extends ConsumerWidget {
                               ),
                               const SizedBox(height: 20),
                               LocationDetailsSection(
-                                address: appointment["appointment_location"] ?? "N/A",
+                                address:
+                                    appointment["appointment_location"] ??
+                                    "N/A",
                                 isPickup: isPickup,
                               ),
                               const SizedBox(height: 16),
                               MaterialSummarySection(
                                 materialSummary: materialSummary,
-                                notes: appointment["appointment_notes"] ?? "None",
+                                notes:
+                                    appointment["appointment_notes"] ?? "None",
                               ),
-                              if (appointment["appointment_type"] == "Pick-Up") ...[
+                              if (appointment["appointment_type"] ==
+                                  "Pick-Up") ...[
                                 DriverInfoSection(useMockData: true),
                               ],
                             ],
                           );
                         },
-                        loading: () => const Center(child: CircularProgressIndicator()),
-                        error: (e, _) => const Text("Error loading appointment details"),
+                        loading: () =>
+                            const Center(child: CircularProgressIndicator()),
+                        error: (e, _) =>
+                            const Text("Error loading appointment details"),
                       );
                     },
                   ),
@@ -249,7 +274,8 @@ class AppointmentDetailsPage extends ConsumerWidget {
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                          ),),
+                          ),
+                        ),
                       ],
                     ),
                   ),

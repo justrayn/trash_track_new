@@ -2,6 +2,7 @@ import 'dart:developer' as dev;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/appointment_model.dart';
 import '../models/appointment_waste.dart';
+import '../services/points_calculation.dart';
 
 class AppointmentException implements Exception {
   final String message;
@@ -67,7 +68,7 @@ class AppointmentRepository {
         final pointsPerKg =
             (materialPointsResult['material_points']?['points_per_kg'] ?? 0)
                 as num;
-        totalPoints += weight * pointsPerKg;
+        totalPoints += calculateMaterialPoints(weight, pointsPerKg);
       }
 
       // Validate appointment belongs to current user by checking user_info_id
@@ -235,7 +236,7 @@ class AppointmentRepository {
             (item['service_materials']?['material_points']?['points_per_kg'] ??
                     0)
                 as num;
-        totalPoints += weight * pointsPerKg;
+        totalPoints += calculateMaterialPoints(weight, pointsPerKg);
         totalWeight += weight;
       }
 

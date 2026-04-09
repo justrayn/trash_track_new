@@ -15,6 +15,7 @@ import '../widgets/schedule/additional_notes_field.dart';
 import '../widgets/schedule/waste_summary_widget.dart';
 import '../widgets/schedule/bottom_summary_widget.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../services/points_calculation.dart';
 
 class ScheduleAppointmentPage extends ConsumerStatefulWidget {
   final DisposalService service;
@@ -239,7 +240,8 @@ class _ScheduleAppointmentPageState
             .single();
 
         final currentPoints = (pointsResponse['user_points'] ?? 0) as int;
-        final newPoints = currentPoints + 5;
+        final newPoints =
+            currentPoints + EcoPointsConstants.scheduleConfirmationBonusPoints;
 
         await Supabase.instance.client
             .from('user_info')
@@ -261,9 +263,9 @@ class _ScheduleAppointmentPageState
       if (mounted) {
         showDialog(
           context: context,
-          builder: (context) => const SuccessDialog(
+          builder: (context) => SuccessDialog(
             message:
-                'Success! Your recycling appointment is confirmed. You earned 5 points! Thank you for helping us make a difference!',
+                'Success! Your recycling appointment is confirmed. You earned ${EcoPointsConstants.scheduleConfirmationBonusPoints} points! Thank you for helping us make a difference!',
           ),
         ).then((_) {
           ref.invalidate(userAppointmentsProvider);
