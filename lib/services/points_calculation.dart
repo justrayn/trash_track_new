@@ -1,20 +1,20 @@
 /// Points calculation utility for trash_track
-/// 
+///
 /// Handles eco-points calculation with threshold-based bonus multiplier
-/// 
+///
 /// RULES:
 /// - Base points: 1 point per 1kg disposed
 /// - Bonus multiplier: 5x (only when disposal weight >= 50kg)
 /// - Example: 50kg = 50 base + 250 bonus (5x50) = 300 total
 
 /// Calculate disposal points with progressive bonuses
-/// 
+///
 /// Returns a tuple of (basePoints, bonusPoints)
-/// 
+///
 /// Parameters:
 ///   - disposalWeightKg: Total weight of waste disposed (in kg)
 ///   - basePointsPerKg: Points awarded per kg (typically 1)
-/// 
+///
 /// Example:
 /// ```dart
 /// final (base, bonus) = calculateDisposalPoints(60, 1);
@@ -37,7 +37,10 @@
 
 /// Calculate total points from disposal
 int calculateTotalPoints(double disposalWeightKg, int basePointsPerKg) {
-  final (base, bonus) = calculateDisposalPoints(disposalWeightKg, basePointsPerKg);
+  final (base, bonus) = calculateDisposalPoints(
+    disposalWeightKg,
+    basePointsPerKg,
+  );
   return base + bonus;
 }
 
@@ -54,10 +57,45 @@ class EcoPointsConstants {
 
   /// Maximum points a user can earn in a single disposal
   static const int maxPointsPerDisposal = 10000;
+
+  /// Flat points awarded when an appointment is successfully scheduled
+  static const int scheduleConfirmationBonusPoints = 5;
+}
+
+/// Calculate points for one waste item using its weight and points-per-kg rate.
+double calculateMaterialPoints(double weightKg, num pointsPerKg) {
+  if (weightKg < 0) {
+    throw ArgumentError('Weight cannot be negative');
+  }
+
+  if (pointsPerKg < 0) {
+    throw ArgumentError('Points per kg cannot be negative');
+  }
+
+  return weightKg * pointsPerKg;
+}
+
+/// Extract and round points value from appointment QR payload.
+///
+/// Expected format contains a `Points:<number>` segment.
+int extractPointsFromQrPayload(String qrPayload) {
+  final pointsMatch = RegExp(r'Points:(\d+(\.\d+)?)').firstMatch(qrPayload);
+  if (pointsMatch == null) {
+    throw const FormatException(
+      'QR payload does not include a valid points value',
+    );
+  }
+
+  final parsedPoints = double.tryParse(pointsMatch.group(1) ?? '');
+  if (parsedPoints == null) {
+    throw const FormatException('Unable to parse points value from QR payload');
+  }
+
+  return parsedPoints.round();
 }
 
 /// Extended points calculation with validation
-/// 
+///
 /// Throws [ArgumentError] if parameters are invalid
 int calculateDisposalPointsSafe(double disposalWeightKg) {
   if (disposalWeightKg < 0) {
@@ -68,8 +106,10 @@ int calculateDisposalPointsSafe(double disposalWeightKg) {
     throw ArgumentError('Disposal weight exceeds maximum limit (1000kg)');
   }
 
-  final (base, bonus) =
-      calculateDisposalPoints(disposalWeightKg, EcoPointsConstants.basePointsPerKg);
+  final (base, bonus) = calculateDisposalPoints(
+    disposalWeightKg,
+    EcoPointsConstants.basePointsPerKg,
+  );
   final total = base + bonus;
 
   // Cap at maximum points
@@ -108,9 +148,12 @@ class PointsBreakdown {
 
 /// Create a detailed breakdown of points earned
 PointsBreakdown getPointsBreakdown(double disposalWeightKg) {
-  final (base, bonus) =
-      calculateDisposalPoints(disposalWeightKg, EcoPointsConstants.basePointsPerKg);
-  final qualifiesForBonus = disposalWeightKg >= EcoPointsConstants.bonusThresholdKg;
+  final (base, bonus) = calculateDisposalPoints(
+    disposalWeightKg,
+    EcoPointsConstants.basePointsPerKg,
+  );
+  final qualifiesForBonus =
+      disposalWeightKg >= EcoPointsConstants.bonusThresholdKg;
 
   return PointsBreakdown(
     disposalWeightKg: disposalWeightKg,
