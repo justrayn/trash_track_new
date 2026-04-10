@@ -88,11 +88,10 @@ void validateEnvironmentConfiguration() {
 
   final missing = <String>[];
 
-  for (final varName in requiredVars) {
-    if (const String.fromEnvironment('').isEmpty) {
-      // In a real implementation, you'd check each variable
-      // For demo purposes, we'll assume they're set
-    }
+    final value = String.fromEnvironment(varName);
+      if (value.isEmpty) {
+        missing.add(varName);
+      }
   }
 
   if (missing.isNotEmpty) {
